@@ -33,4 +33,10 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-subdir('linux')
+if get_option('semihost')
+  subdir('semihost')
+endif
+
+if get_option('os-linux')
+  subdir('linux')
+endif
