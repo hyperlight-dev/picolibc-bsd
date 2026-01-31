@@ -46,7 +46,10 @@
 #include <unistd.h>
 
 #include <linux/linux-fcntl.h>
+#include <linux/linux-poll.h>
 #include <linux/linux-syscall.h>
+#include <linux/linux-termios.h>
+#include <linux/linux-time.h>
 
 #define __GLIBC__ 2 /* Avoid getting the defines */
 #include <linux/stat.h>
