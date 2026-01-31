@@ -36,7 +36,8 @@
 #include "local-linux.h"
 #include "local-time.h"
 
-int nanosleep(const struct timespec *request, struct timespec *remain)
+int
+nanosleep(const struct timespec *request, struct timespec *remain)
 {
     struct __kernel_timespec k_request, k_remain, *k_remainp;
     int                      ret;
@@ -56,4 +57,3 @@ int nanosleep(const struct timespec *request, struct timespec *remain)
     }
     return ret;
 }
-
