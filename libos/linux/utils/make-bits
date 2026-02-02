@@ -81,7 +81,7 @@ wrap() {
     echo "#ifndef ${DEF}"
     echo "#define ${DEF}"
     case "$HEADER" in
-	errno|termios)
+	errno|termios|signal)
 	    "${RUN}" ./${EXEC} || exit 1
 	    ;;
 	*)
@@ -93,7 +93,7 @@ wrap() {
     clang-format -i $OUT
 }
 
-headers=(errno fcntl poll syscall termios time)
+headers=(errno fcntl poll signal syscall termios time wait)
 
 for a in "${arch[@]}"; do
     for h in "${headers[@]}"; do
