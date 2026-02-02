@@ -50,6 +50,7 @@
 #include <linux/linux-syscall.h>
 #include <linux/linux-termios.h>
 #include <linux/linux-time.h>
+#include <linux/linux-wait.h>
 
 #define __GLIBC__ 2 /* Avoid getting the defines */
 #include <linux/stat.h>
