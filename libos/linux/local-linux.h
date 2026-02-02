@@ -55,9 +55,9 @@
 #include <linux/stat.h>
 
 long syscall(long sys_call, ...);
-
 long _syscall_error(long ret);
-
+int  _signal_to_linux(int sig);
+int  _signal_from_linux(int sig);
 int  _statbuf(struct stat *statbuf, const struct statx *statxbuf);
 
 #endif /* _LOCAL_LINUX_H_ */
