@@ -64,6 +64,8 @@ fcntl(int fd, int op, ...)
         op = LINUX_F_SETFL;
         arg = 1;
         break;
+    case F_SETLK:
+        return 0;
     default:
         errno = EINVAL;
         return -1;
