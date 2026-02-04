@@ -44,13 +44,11 @@ srcs_posix = [
   'fgetpwent.c',
   'fgetpwent_r.c',
   'fnmatch.c',
-  'fpathconf.c',
   'getlogin.c',
   'getpwent.c',
   'getpwnam.c',
   'getpwnam_r.c',
   'getpwuid.c',
-  'pathconf.c',
   'getpwuid_r.c',
   'pwdata.c',
   'regcomp.c',
@@ -79,3 +77,6 @@ endforeach
 
 src_posix = files(srcs_posix_use)
   
+if not has_os_fallback
+  src_posix += src_os_fallback
+endif
