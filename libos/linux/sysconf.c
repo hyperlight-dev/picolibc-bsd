@@ -37,18 +37,10 @@
 #include <unistd.h>
 #include <limits.h>
 
+#if 0
 long
 sysconf(int name)
 {
-    switch (name) {
-    case _SC_ARG_MAX:
-        return _POSIX_ARG_MAX;
-    case _SC_CHILD_MAX:
-        return _POSIX_CHILD_MAX;
-    case _SC_OPEN_MAX:
-        return _POSIX_OPEN_MAX;
-    default:
-        errno = EINVAL;
-        return -1;
-    }
+    return __fallback_sysconf(name);
 }
+#endif
