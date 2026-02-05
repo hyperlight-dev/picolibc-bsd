@@ -36,9 +36,13 @@
 #define _DEFAULT_SOURCE
 #include <unistd.h>
 #include <stdlib.h>
+#include <pwd.h>
 
 char *
 getlogin(void)
 {
-    return getenv("USER");
+    struct passwd *pwd = getpwuid(getuid());
+    if (!pwd)
+        return NULL;
+    return pwd->pw_name;
 }
