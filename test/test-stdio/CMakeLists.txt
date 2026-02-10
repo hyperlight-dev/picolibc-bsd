@@ -46,14 +46,6 @@ set(tests
   test-vsnprintf-s
   )
 
-set(tests_fail
-  )
-
 foreach(test IN LISTS tests)
   picolibc_test(${test})
-endforeach()
-
-foreach(test IN LISTS tests_fail)
-  picolibc_test(${test})
-  set_tests_properties(${test} PROPERTIES WILL_FAIL ON)
 endforeach()

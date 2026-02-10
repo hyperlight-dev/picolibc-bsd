@@ -158,5 +158,21 @@ if enable_native_tests
         )
   endforeach
 
+  foreach t1 : tests_failure
+    t1_src = t1 + '.c'
+    t1_name = t1 + '-failure--native'
+    test_file_name_arg=['-DTEST_FILE_NAME="' + t1_name + '.txt"']
+
+    test(t1_name,
+	 executable(t1_name, t1_src,
+		    c_args: native_c_args + test_file_name_arg + ctype_c_args,
+		    link_args: native_c_args,
+                    dependencies: native_lib_m),
+         suite: 'test-stdlib',
+         env: test_env,
+         should_fail: true
+        )
+  endforeach
+
 endif
 
