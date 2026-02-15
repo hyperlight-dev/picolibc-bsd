@@ -63,5 +63,7 @@ fdopen(int fd, const char *mode)
     if (open_flags & O_APPEND)
         (void)fseeko(&(bf->xfile.cfile.file), 0, SEEK_END);
 
+    bufio_add_file(&(bf->xfile.cfile.file));
+
     return &(bf->xfile.cfile.file);
 }
