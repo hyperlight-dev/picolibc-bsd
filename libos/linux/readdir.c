@@ -58,6 +58,8 @@ readdir(DIR *dir)
     dirent = &dir->dirent;
     dirent->d_ino = (ino_t)k_dirent->d_ino;
 
+    MAP_DT(dirent->d_type, k_dirent->d_type);
+
     size_t name_len = strlen((char *)k_dirent->d_name);
     if (name_len >= sizeof(dirent->d_name))
         name_len = sizeof(dirent->d_name) - 1;
