@@ -34,8 +34,6 @@
  */
 
 #define _DEFAULT_SOURCE
-#include <stdio.h>
-#include <sys/types.h>
 #include <pwd.h>
 
 void
