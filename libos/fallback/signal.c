@@ -33,21 +33,17 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define _DEFAULT_SOURCE
-#include <errno.h>
-#include <signal.h>
-#include <unistd.h>
-
-#define _NSIG_WORDS ((_NSIG + sizeof(unsigned) * 8 - 1) / (sizeof(unsigned) * 8))
-
-static _sig_func_ptr _sig_func[_NSIG];
-static unsigned      _sig_mask[_NSIG_WORDS];
-static unsigned      _sig_pending[_NSIG_WORDS];
+#include "local-signal.h"
 
 #ifndef __weak_reference
-#define __fallback_signal signal
-#define __fallback_raise  raise
+#define __fallback_signal      signal
+#define __fallback_raise       raise
+#define __fallback_sigprocmask sigprocmask
 #endif
+
+_sig_func_ptr _sig_func[_NSIG];
+sigset_t      _sig_mask;
+sigset_t      _sig_pending;
 
 _sig_func_ptr
 __fallback_signal(int sig, _sig_func_ptr func)
@@ -64,54 +60,4 @@ __fallback_signal(int sig, _sig_func_ptr func)
 
 #ifdef __weak_reference
 __weak_reference(__fallback_signal, signal);
-#endif
-
-int
-__fallback_raise(int sig)
-{
-    if (sig < 0 || sig >= _NSIG) {
-        errno = EINVAL;
-        return -1;
-    }
-
-    int      w;
-    unsigned b;
-
-    w = sig / (sizeof(_sig_mask[0]) * 8);
-    b = 1U << (sig % (sizeof(_sig_mask[0]) * 8));
-
-    /* Mark signal as pending */
-    _sig_pending[w] |= b;
-
-    /* Keep processing until the signal is no longer pending */
-    while (_sig_pending[w] & b) {
-
-        /* If signal is currently blocked, don't deliver it */
-        if (_sig_mask[w] & b)
-            break;
-
-        /* Mark signal as no longer pending */
-        _sig_pending[w] &= ~b;
-
-        _sig_func_ptr func = _sig_func[sig];
-
-        if (func == SIG_IGN)
-            break;
-        else if (func == SIG_DFL)
-            _exit(128 + sig);
-
-        /* Block signal while the handler is active */
-        _sig_mask[w] |= b;
-
-        /* Invoke the handler */
-        (*func)(sig);
-
-        _sig_mask[w] &= ~b;
-    }
-
-    return 0;
-}
-
-#ifdef __weak_reference
-__weak_reference(__fallback_raise, raise);
 #endif
