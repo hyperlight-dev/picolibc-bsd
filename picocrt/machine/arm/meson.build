@@ -38,6 +38,6 @@ has_crt0_linux = true
 picocrt_machines += [
   {
     'name': 'fvp',
-    'suffix': '-fvp',
+    'alias': 'qemu',
   },
 ]
