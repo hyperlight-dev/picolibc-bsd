@@ -36,5 +36,5 @@
 long double
 infinityl(void)
 {
-    return (long double) INFINITY;
+    return (long double)INFINITY;
 }
