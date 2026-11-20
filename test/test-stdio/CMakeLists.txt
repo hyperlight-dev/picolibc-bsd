@@ -35,25 +35,34 @@
 
 set(tests
   test-fmemopen
+  test-fmemopen-rplus
+  test-fopencookie
+  test-open_memstream
   test-funopen
+  test-fwrite-fast-path
   test-put
   test-printf
   test-printf-scanf
   test-sprintf-percent-n
   test-sprintf-s
+  test-strfromf
   test-ungetc
+  test-fclose-flush-error
+  test-fflush-error
+  test-fdevclose-flush-error
+  test-fclose-locking-error
+  test-fdevclose-locking
+  test-ungetc-reposition
+  test-fseek-failure
+  test-fflush-input-error
+  test-ungetc-fflush
+  test-fwrite-flush-recover
+  test-ftell-write
+  test-ungetc-start-fflush
   test-vfprintf-s
   test-vsnprintf-s
   )
 
-set(tests_fail
-  )
-
 foreach(test IN LISTS tests)
   picolibc_test(${test})
-endforeach()
-
-foreach(test IN LISTS tests_fail)
-  picolibc_test(${test})
-  set_tests_properties(${test} PROPERTIES WILL_FAIL ON)
 endforeach()

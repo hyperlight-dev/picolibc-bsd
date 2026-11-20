@@ -41,10 +41,9 @@ static TEST_CONST struct {
     int      x1;
     binary32 x2;
     binary32 y;
-    ulp_t    ulp;
 } test_32_vec[] = {
-#define REAL(r32, r64, r80, r128)     r32
-#define REAL_ULP(r32, r64, r80, r128) r32
+#define REAL(r32, r64, r80, r80m, r128)     r32
+#define REAL_ULP(r32, r64, r80, r80m, r128) r32
 #include TEST_VECTORS
 #undef REAL
 #undef REAL_ULP
@@ -64,8 +63,8 @@ test_binary32(void)
             printf("Skipping denorm value\n");
             continue;
         }
-        binary32 y = TEST_FUNC_32(test_32_vec[i].x1, test_32_vec[i].x2);
-        ulp_t    ulp = ulp32(y, test_32_vec[i].y);
+        volatile binary32 y = TEST_FUNC_32(test_32_vec[i].x1, test_32_vec[i].x2);
+        ulp_t             ulp = ulp32(y, test_32_vec[i].y);
         if (ulp > max_ulp)
             max_ulp = ulp;
         if (ulp > math_ulp_binary32) {
@@ -86,10 +85,9 @@ static TEST_CONST struct {
     int      x1;
     binary64 x2;
     binary64 y;
-    ulp_t    ulp;
 } test_64_vec[] = {
-#define REAL(r32, r64, r80, r128)     r64
-#define REAL_ULP(r32, r64, r80, r128) r64
+#define REAL(r32, r64, r80, r80m, r128)     r64
+#define REAL_ULP(r32, r64, r80, r80m, r128) r64
 #include TEST_VECTORS
 #undef REAL
 #undef REAL_ULP
@@ -109,8 +107,8 @@ test_binary64(void)
             printf("Skipping denorm value\n");
             continue;
         }
-        binary64 y = TEST_FUNC_64(test_64_vec[i].x1, test_64_vec[i].x2);
-        ulp_t    ulp = ulp64(y, test_64_vec[i].y);
+        volatile binary64 y = TEST_FUNC_64(test_64_vec[i].x1, test_64_vec[i].x2);
+        ulp_t             ulp = ulp64(y, test_64_vec[i].y);
         if (ulp > max_ulp)
             max_ulp = ulp;
         if (ulp > math_ulp_binary64) {
@@ -132,10 +130,9 @@ static TEST_CONST struct {
     int      x1;
     binary80 x2;
     binary80 y;
-    ulp_t    ulp;
 } test_80_vec[] = {
-#define REAL(r32, r64, r80, r128)     r80
-#define REAL_ULP(r32, r64, r80, r128) r80
+#define REAL(r32, r64, r80, r80m, r128)     REAL80(r80, r80m)
+#define REAL_ULP(r32, r64, r80, r80m, r128) REAL80(r80, r80m)
 #include TEST_VECTORS
 #undef REAL
 #undef REAL_ULP
@@ -157,8 +154,8 @@ test_binary80(void)
             printf("Skipping denorm value\n");
             continue;
         }
-        binary80 y = TEST_FUNC_80(test_80_vec[i].x1, test_80_vec[i].x2);
-        ulp_t    ulp = ulp80(y, test_80_vec[i].y);
+        volatile binary80 y = TEST_FUNC_80(test_80_vec[i].x1, test_80_vec[i].x2);
+        ulp_t             ulp = ulp80(y, test_80_vec[i].y);
         if (ulp > max_ulp)
             max_ulp = ulp;
         if (ulp > math_ulp_binary80) {
@@ -180,10 +177,9 @@ static TEST_CONST struct {
     int       x1;
     binary128 x2;
     binary128 y;
-    ulp_t     ulp;
 } test_128_vec[] = {
-#define REAL(r32, r64, r80, r128)     r128
-#define REAL_ULP(r32, r64, r80, r128) r128
+#define REAL(r32, r64, r80, r80m, r128)     r128
+#define REAL_ULP(r32, r64, r80, r80m, r128) r128
 #include TEST_VECTORS
 #undef REAL
 #undef REAL_ULP
@@ -203,8 +199,8 @@ test_binary128(void)
             printf("Skipping denorm value\n");
             continue;
         }
-        binary128 y = TEST_FUNC_128(test_128_vec[i].x1, test_128_vec[i].x2);
-        ulp_t     ulp = ulp128(y, test_128_vec[i].y);
+        volatile binary128 y = TEST_FUNC_128(test_128_vec[i].x1, test_128_vec[i].x2);
+        ulp_t              ulp = ulp128(y, test_128_vec[i].y);
         if (ulp > max_ulp)
             max_ulp = ulp;
         if (ulp > math_ulp_binary128) {

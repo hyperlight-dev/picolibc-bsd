@@ -16,34 +16,56 @@
 
 _BEGIN_STD_C
 
+#define __STDC_VERSION_FENV_H__ 202311L
+
 #include <machine/fenv.h>
 
 #ifndef FE_ALL_EXCEPT
 #define FE_ALL_EXCEPT 0
 #endif
 
+#ifdef __declare_fenv_inline
+
+#if __ISO_C_VISIBLE >= 2023
+__declare_fenv_inline(int) fetestexceptflag(const fexcept_t *flagp, int excepts)
+{
+    return *flagp & excepts & FE_ALL_EXCEPT;
+}
+#endif
+
+#else
+
+/* These declarations are only needed when the machine header has not
+ * already provided inline definitions via __declare_fenv_inline. */
+
 /* Exception */
-int feclearexcept(int excepts);
-int fegetexceptflag(fexcept_t *flagp, int excepts);
-int feraiseexcept(int excepts);
-int fesetexceptflag(const fexcept_t *flagp, int excepts);
-int fetestexcept(int excepts);
+int feclearexcept(int excepts) __picolibc_export;
+int fegetexceptflag(fexcept_t *flagp, int excepts) __picolibc_export;
+int feraiseexcept(int excepts) __picolibc_export;
+int fesetexcept(int excepts) __picolibc_export;
+int fesetexceptflag(const fexcept_t *flagp, int excepts) __picolibc_export;
+int fetestexcept(int excepts) __picolibc_export;
+#if __ISO_C_VISIBLE >= 2023
+int fetestexceptflag(const fexcept_t *flagp, int excepts) __picolibc_export;
+#endif
 
 /* Rounding mode */
-int fegetround(void);
-int fesetround(int rounding_mode);
+int fegetround(void) __picolibc_export;
+int fesetround(int rounding_mode) __picolibc_export;
 
 /* Float environment */
-int fegetenv(fenv_t *envp);
-int feholdexcept(fenv_t *envp);
-int fesetenv(const fenv_t *envp);
-int feupdateenv(const fenv_t *envp);
+int fegetenv(fenv_t *envp) __picolibc_export;
+int feholdexcept(fenv_t *envp) __picolibc_export;
+int fesetenv(const fenv_t *envp) __picolibc_export;
+int feupdateenv(const fenv_t *envp) __picolibc_export;
 
 #if __GNU_VISIBLE
-int feenableexcept(int);
-int fedisableexcept(int);
-int fegetexcept(void);
+int feenableexcept(int) __picolibc_export;
+int fedisableexcept(int) __picolibc_export;
+int fegetexcept(void) __picolibc_export;
 #endif
+
+#endif /* !__declare_fenv_inline */
 
 /*
  * Lastly, a FE_DFL_ENV macro must be defined, representing a pointer
@@ -55,10 +77,10 @@ int fegetexcept(void);
  *       fenv_t with the default fenv_t. The format of fenv_t and where
  *       FE_DFL_ENV is are implementation specific.
  */
-extern fenv_t _fe_dfl_env;
+extern __picolibc_export fenv_t _fe_dfl_env;
 #define FE_DFL_ENV ((const fenv_t *)&_fe_dfl_env)
 
-#ifdef __STDC_WANT_IEC_60559_BFP_EXT__
+#if __ISO_C_VISIBLE >= 2023 || defined(__STDC_WANT_IEC_60559_BFP_EXT__)
 
 #ifndef FE_DFL_MODE
 typedef struct {
@@ -67,9 +89,8 @@ typedef struct {
 #define FE_DFL_MODE ((femode_t *)0)
 #endif
 
-int fegetmode(femode_t *modep);
-int fesetmode(femode_t *modep);
-int fesetexcept(int excepts);
+int fegetmode(femode_t *modep) __picolibc_export;
+int fesetmode(femode_t *modep) __picolibc_export;
 
 #endif
 

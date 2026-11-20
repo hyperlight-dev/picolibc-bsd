@@ -49,7 +49,6 @@ inc_headers = [
   'devctl.h',
   'dirent.h',
   'endian.h',
-  'envlock.h',
   'envz.h',
   'errno.h',
   'fastmath.h',
@@ -73,6 +72,7 @@ inc_headers = [
   'ndbm.h',
   'newlib.h',
   'paths.h',
+  'poll.h',
   'pwd.h',
   'regdef.h',
   'regex.h',
@@ -81,9 +81,13 @@ inc_headers = [
   'setjmp.h',
   'signal.h',
   'spawn.h',
+  'stdc-predef.h',
+  'stdbit.h',
+  'stdckdint.h',
   'stdint.h',
   'stdio.h',
   'stdio-bufio.h',
+  'stdio-posix.h',
   'stdnoreturn.h',
   'stdlib.h',
   'string.h',
@@ -107,6 +111,10 @@ endif
 
 inc_headers += ['picotls.h']
 
+if enable_libdl
+  inc_headers += ['dlfcn.h']
+endif
+
 if really_install
   install_headers(inc_headers,
                   install_dir: include_dir)
@@ -120,7 +128,7 @@ endif
 
 if enable_cdefs_tests
 
-  ignore_headers = ['cpio.h', 'paths.h', 'termios.h', 'newlib.h', 'regdef.h', 'tar.h', 'utmp.h']
+  ignore_headers = ['cpio.h', 'paths.h', 'termios.h', 'newlib.h', 'regdef.h', 'tar.h', 'utmp.h', 'stdc-predef.h']
   foreach header : inc_headers
 
     if not (header in ignore_headers) and not (header.startswith('_'))

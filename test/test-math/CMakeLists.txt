@@ -56,24 +56,50 @@ set(tests_real_exp
   test-exp10
   test-exp2
   test-expm1
+  test-exp2m1
+  test-exp10m1
   test-log
   test-log10
   test-log1p
   test-log2
+  test-log10p1
+  test-log2p1
   test-pow
+  test-pown
+  test-powr
 )
 
 set(tests_real_other
   test-cbrt
+  test-ceil
   test-erf
   test-erfc
+  test-floor
+  test-fromfp
+  test-fromfpx
   test-hypot
   test-j0
   test-j1
   test-jn
   test-lgamma
+  test-nextafter
+  test-nextdown
+  test-nextup
+  test-remainder
+  test-remquo-quo
+  test-rootn
+  test-round
+  test-roundeven
+  test-rsqrt
+  test-scalbn
+  test-setpayload
+  test-setpayloadsig
   test-sqrt
   test-tgamma
+  test-totalorder
+  test-totalordermag
+  test-ufromfp
+  test-ufromfpx
   )
 
 set(tests_complex_trig
@@ -101,6 +127,16 @@ set(tests_complex_other
   test-csqrt
 )
 
+set(tests_other
+  test-add
+  test-fenv
+  test-fma
+  test-long-double
+  test-math-errhandling
+  test-math-funcs
+  test-rounding-mode
+  )
+
 set(tests
   ${tests_real_trig}
   ${tests_real_exp}
@@ -108,6 +144,7 @@ set(tests
   ${tests_complex_trig}
   ${tests_complex_exp}
   ${tests_complex_other}
+  ${tests_math_other}
   )
 
 foreach(test IN LISTS tests)

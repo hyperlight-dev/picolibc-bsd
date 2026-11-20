@@ -18,7 +18,12 @@ case "$TARGET" in
         done
         ;;
     *clang-arm*|*clang-aarch64*|*clang-thumb*)
-        for p in "$TOP"/LLVM-ET-Arm*/bin "$TOP"/*/models/*; do
+        for p in "$TOP"/ATfE-*/bin "$TOP"/*/models/*; do
+            [ -d "$p" ] && PATH="$p":$PATH
+        done
+        ;;
+    *clang-avr*)
+        for p in "$TOP"/*avr*/bin; do
             [ -d "$p" ] && PATH="$p":$PATH
         done
         ;;
@@ -44,4 +49,9 @@ esac
 
 OPTIONS="$ANALYZER $CDEFS"
 
-"$HERE"/do-run "$TARGET" $OPTIONS "$@"
+# Disable incremental tests; the cdefs tests are probably
+# faster than the incremental build
+BEFORE_SHA=
+AFTER_SHA=
+
+exec "$HERE"/do-run "$TARGET" $OPTIONS "$@"

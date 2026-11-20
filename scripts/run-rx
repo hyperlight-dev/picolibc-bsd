@@ -36,6 +36,10 @@
 
 dir="$(dirname "$0")"
 
+if $dir/check-ci "$1"; then
+    exit 77
+fi
+
 # select the program
 elf="$1"
 shift
@@ -70,6 +74,17 @@ data=`readelf -h "$elf" | grep 'Data:'`
 case "$data" in
     *"big endian"*)
         echo "Skipping big-endian $elf"
+        exit 77
+        ;;
+esac
+
+flags=$(readelf -h "$elf" | awk '/Flags/ { print $2 }')
+
+case "$flags" in
+    0xd*)
+        ;;
+    *)
+        echo "Skipping unsupported hardware $elf"
         exit 77
         ;;
 esac
