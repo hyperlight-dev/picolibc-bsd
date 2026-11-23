@@ -73,6 +73,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
           TARGET: ${{ steps.import.outputs.target }}
           BRANCH: ${{ steps.import.outputs.branch }}
           FROM: ${{ steps.import.outputs.from }}
