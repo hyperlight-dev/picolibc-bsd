@@ -22,6 +22,7 @@ jobs:
       - name: Create tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           version="${GITHUB_HEAD_REF#update-upstream-}"
           tag="${version}-bsd"
