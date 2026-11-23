@@ -6,21 +6,32 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   scancode:
     name: Scancode License Scan
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.12"
 
       - name: Install scancode-toolkit
-        run: pip install 'scancode-toolkit==32.3.0'
+        # scancode 32.3.0 breaks with pluggy 1.7 (plugin hooks not found) and
+        # click 8.5 (--strip-root and --full-root always reported as conflicting).
+        run: pip install 'scancode-toolkit==32.3.0' 'pluggy<1.7' 'click<8.5'
 
       - name: Scan licenses
         run: |
@@ -74,7 +85,7 @@ jobs:
 
       - name: Upload scancode results
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: scancode-results
           path: scancode-results.json
@@ -84,7 +95,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
 
       - name: Verify excluded paths do not exist
         run: |
