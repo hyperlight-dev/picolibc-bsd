@@ -1,0 +1,3 @@
+# Upstream paths maintained independently by this fork.
+# Paths exclude both the named file and all files beneath a named directory.
+.github/workflows

@@ -31,28 +31,44 @@ at a time with copyleft files filtered, preserving individual commit granularity
 
 Updates can be triggered manually via the
 [Update from Upstream](.github/workflows/update-upstream.yml) GitHub Actions workflow, which takes
-an upstream version tag (e.g., `1.9.0`) as input. The workflow:
+an upstream release tag (e.g., `1.9.0`), branch, or commit (e.g., `ff59ec82f`) as input. The
+workflow:
 
-1. Detects the current base version from the latest `*-bsd` tag
+1. Detects the current base version from the nearest `*-bsd` tag on `main`
 2. Runs `scripts/import-upstream.sh` to cherry-pick upstream commits with copyleft files filtered
    out
 3. Opens a PR for review
 4. On merge, a `<version>-bsd` tag and GitHub release are created automatically
+
+The importer preserves `.github/workflows/` from this fork; upstream workflow changes are listed in
+`UPSTREAM_EXCLUSIONS` and are not imported.
+
+### Snapshot versions
+
+Upstream commits that are not tagged releases are named relative to the nearest earlier release
+with `git describe`, e.g., `1.8.12-274-gff59ec82fce7` (274 commits after `1.8.12`, at upstream
+commit `ff59ec82fce7`). The name is used for the update branch and the `-bsd` tag, and Git resolves
+it back to the same upstream commit for the next import. To print the name for an upstream ref:
+
+```bash
+scripts/import-upstream.sh --describe <upstream-ref>
+```
 
 ### Manual import
 
 To import locally instead of using the workflow:
 
 ```bash
-scripts/import-upstream.sh <from-tag> <to-tag>
-# e.g., scripts/import-upstream.sh 1.8.11 1.9.0
+from=$(git describe --tags --abbrev=0 --match '*-bsd' HEAD)
+to=$(scripts/import-upstream.sh --describe <upstream-ref>)
+scripts/import-upstream.sh "${from%-bsd}" "$to"
 ```
 
 After importing, tag the result and push:
 
 ```bash
-git tag <to-tag>-bsd
-git push origin main --tags
+git tag "${to}-bsd"
+git push origin main "${to}-bsd"
 ```
 
 ## License scanning

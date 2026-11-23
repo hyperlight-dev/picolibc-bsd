@@ -5,23 +5,29 @@ on:
     types: [closed]
     branches: [main]
 
-permissions:
-  contents: write
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
 
 jobs:
   tag:
     name: Create version tag
     if: github.event.pull_request.merged && startsWith(github.event.pull_request.head.ref, 'update-upstream-')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to create the BSD release and its tag.
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
       - name: Create tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           version="${GITHUB_HEAD_REF#update-upstream-}"
           tag="${version}-bsd"
+          prerelease=()
+          if [[ "$version" == *-* ]]; then
+            prerelease+=(--prerelease)
+          fi
           echo "Creating tag: $tag"
-          gh release create "$tag" --title "picolibc ${version} (BSD)" --notes "Based on upstream picolibc ${version}"
+          gh release create "$tag" --title "picolibc ${version} (BSD)" --notes "Based on upstream picolibc ${version}" "${prerelease[@]}"

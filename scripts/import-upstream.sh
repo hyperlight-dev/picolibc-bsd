@@ -4,9 +4,17 @@
 # filtered out.
 #
 # Usage:
-#   scripts/import-upstream.sh <from-tag> <to-tag>
+#   scripts/import-upstream.sh <from-ref> <to-ref>
+#   scripts/import-upstream.sh --describe <ref>
 #
-# Arguments should be upstream picolibc version tags (e.g., 1.8.11, 1.9.0).
+# Refs may be upstream release tags (e.g., 1.8.11, 1.9.0), upstream
+# branches, commits, or version names printed by --describe.
+#
+# --describe prints the version name used for update branches and *-bsd
+# tags: the release tag for a tagged release, otherwise a git-describe
+# name relative to the nearest earlier release (e.g.,
+# 1.8.12-274-gff59ec82fce7). Git resolves that name back to the same
+# upstream commit.
 #
 # Cherry-picks each upstream commit, removing copyleft files listed in
 # COPYLEFT_EXCLUSIONS. Copyleft-only commits are skipped. Known fork
@@ -27,6 +35,15 @@ while IFS= read -r line; do
 	EXCLUDED_PATHS+=("$line")
 done <"${REPO_ROOT}/COPYLEFT_EXCLUSIONS"
 
+# Read upstream paths maintained independently by this fork.
+declare -a UPSTREAM_EXCLUDED_PATHS
+while IFS= read -r line; do
+	case "$line" in
+	"#"* | "") continue ;;
+	esac
+	UPSTREAM_EXCLUDED_PATHS+=("$line")
+done <"${REPO_ROOT}/UPSTREAM_EXCLUSIONS"
+
 # Build pathspec exclude args for git diff-tree
 PATHSPEC_EXCLUDES=()
 for path in "${EXCLUDED_PATHS[@]}"; do
@@ -38,11 +55,36 @@ is_excluded() {
 	[[ -n "${EXCLUDED[$1]+x}" ]]
 }
 
+# Check whether a path is maintained independently by this fork.
+is_upstream_excluded() {
+	local file="$1"
+	for path in "${UPSTREAM_EXCLUDED_PATHS[@]}"; do
+		[[ "$file" == "$path" || "$file" == "$path/"* ]] && return 0
+	done
+	return 1
+}
+
 # Remove all excluded files from the git index and working tree.
 remove_excluded_files() {
 	for path in "${EXCLUDED_PATHS[@]}"; do
 		git rm -rf --quiet "$path" 2>/dev/null || true
 	done
+}
+
+# Restore fork-maintained paths after applying an upstream commit.
+filter_upstream_excluded_files() {
+	while IFS= read -r -d '' file; do
+		if ! is_upstream_excluded "$file"; then
+			continue
+		fi
+
+		if git cat-file -e "HEAD:$file" 2>/dev/null; then
+			git restore --source=HEAD --staged --worktree -- "$file"
+		else
+			git rm --force --cached --quiet -- "$file"
+			rm -f -- "$file"
+		fi
+	done < <(git diff --cached --name-only --no-renames -z)
 }
 
 # Return true if a commit touches at least one non-excluded file.
@@ -76,7 +118,14 @@ try_auto_resolve() {
 	fi
 
 	while IFS= read -r file; do
-		if is_excluded "$file"; then
+		if is_upstream_excluded "$file"; then
+			if git cat-file -e "HEAD:$file" 2>/dev/null; then
+				git checkout --ours -- "$file" 2>/dev/null || return 1
+				git add -- "$file"
+			else
+				git rm --force -- "$file" 2>/dev/null || return 1
+			fi
+		elif is_excluded "$file"; then
 			git rm --quiet "$file" 2>/dev/null || true
 		elif [ "$file" = "README.md" ]; then
 			git show "${commit}:README.md" >README.upstream.md 2>/dev/null || return 1
@@ -101,24 +150,52 @@ resolve_ref() {
 		}
 }
 
-# Cherry-pick each upstream commit in the given range, filtering out
-# copyleft files and auto-resolving known divergences.
-main() {
-	if [ $# -ne 2 ]; then
-		echo "Usage: $0 <from-ref> <to-ref>" >&2
-		exit 1
-	fi
+# Print the version name for an upstream commit: its release tag, or
+# <release>-<count>-g<hash> relative to the nearest earlier release.
+# Tags containing '-' (Debian packaging, *-bsd) are not releases.
+describe_ref() {
+	git describe --tags --abbrev=12 --match '[0-9]*' --exclude '*-*' "$1"
+}
 
-	cd "${REPO_ROOT}"
-
+# Add the upstream remote if needed and fetch its branches and tags.
+fetch_upstream() {
 	if ! git remote get-url "${UPSTREAM_REMOTE}" >/dev/null 2>&1; then
 		git remote add "${UPSTREAM_REMOTE}" "${UPSTREAM_URL}"
 	fi
 
 	git fetch "${UPSTREAM_REMOTE}" --tags --quiet
+}
 
-	from_sha=$(resolve_ref "$1")
-	to_sha=$(resolve_ref "$2")
+usage() {
+	echo "Usage: $0 <from-ref> <to-ref>" >&2
+	echo "       $0 --describe <ref>" >&2
+	exit 1
+}
+
+# Cherry-pick each upstream commit in the given range, filtering out
+# copyleft files and auto-resolving known divergences.
+main() {
+	cd "${REPO_ROOT}"
+
+	if [ "${1-}" = "--describe" ]; then
+		if [ $# -ne 2 ]; then
+			usage
+		fi
+
+		fetch_upstream
+		sha=$(resolve_ref "$2") || exit 1
+		describe_ref "$sha"
+		return
+	fi
+
+	if [ $# -ne 2 ]; then
+		usage
+	fi
+
+	fetch_upstream
+
+	from_sha=$(resolve_ref "$1") || exit 1
+	to_sha=$(resolve_ref "$2") || exit 1
 
 	echo "Range: $1 (${from_sha:0:12}) .. $2 (${to_sha:0:12})"
 
@@ -154,6 +231,7 @@ main() {
 		fi
 
 		remove_excluded_files
+		filter_upstream_excluded_files
 		redirect_readme "$commit"
 
 		if git diff --cached --quiet 2>/dev/null; then
