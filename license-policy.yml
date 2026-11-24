@@ -1,5 +1,6 @@
 # Allowlist of approved permissive licenses found in picolibc.
-# Any license not listed here will be flagged as unapproved.
+# OR requires one approved alternative; AND requires all terms.
+# A license WITH an exception is a single term.
 license_policies:
   - license_key: apache-2.0
     label: Approved
