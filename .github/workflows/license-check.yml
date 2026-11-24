@@ -33,6 +33,9 @@ jobs:
         # click 8.5 (--strip-root and --full-root always reported as conflicting).
         run: pip install 'scancode-toolkit==32.3.0' 'pluggy<1.7' 'click<8.5'
 
+      - name: Test license policy checker
+        run: python .github/workflows/test_check_license_policy.py
+
       - name: Scan licenses
         run: |
           scancode \
@@ -42,7 +45,7 @@ jobs:
             --processes "$(nproc)" \
             --json-pp scancode-results.json \
             --ignore ".git/*" \
-            --ignore ".github/*" \
+            --ignore ".github" \
             --ignore "scripts/import-upstream.sh" \
             --ignore "COPYLEFT_EXCLUSIONS" \
             --ignore "COPYING.picolibc" \
@@ -54,29 +57,7 @@ jobs:
             .
 
       - name: Check for unapproved licenses
-        run: |
-          jq -r '
-            [.files[]
-              | select(.license_detections | length > 0)
-              | {
-                  path,
-                  detected_license_expression_spdx,
-                  approved_keys: [.license_policy[]?.license_key],
-                  detected_keys: ([.license_detections[].matches[].license_expression]
-                    | map(split(" AND ") | .[])
-                    | map(split(" OR ") | .[])
-                    | unique)
-                }
-              | .unapproved = (.detected_keys - .approved_keys)
-              | select(.unapproved | length > 0)]
-            | if length > 0 then
-                "Unapproved licenses found:",
-                (.[] | "  \(.path): \(.unapproved | join(", "))"),
-                halt_error(1)
-              else
-                "All detected licenses are approved."
-              end
-          ' scancode-results.json
+        run: python .github/workflows/check_license_policy.py scancode-results.json
 
       - name: Print detected licenses
         if: always()
