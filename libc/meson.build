@@ -33,10 +33,13 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-libdirs = ['argz', 'ctype', 'errno', 'iconv', 'locale',
-           'misc', 'posix', 'search', 'signal', 'ssp',
-           'stdio', 'stdlib', 'string', 'time', 'xdr',
-           'uchar', 'ubsan']
+libdirs = ['argz', 'ctype', 'errno', 'iconv', 'locale', 'misc',
+           'posix', 'search', 'signal', 'ssp', 'stdbit', 'stdio',
+           'stdlib', 'string', 'time', 'xdr', 'uchar', 'ubsan']
+
+if use_stdlib
+  libdirs += ['native']
+endif
 
 libnames = libdirs
 
@@ -62,6 +65,14 @@ foreach libname : libnames
   src_cpart += get_variable('src_' + libname, [])
 endforeach
 
+# If there's no libraries with OS functions, then integrate the
+# fallback OS implementations of signal, sbrk and sysconf into the C
+# library
+
+if not has_os_library
+  src_cpart += src_os_fallback
+endif
+
 subdir('include')
 
 foreach params : targets
@@ -82,7 +93,7 @@ foreach params : targets
 
   if libobjs != []
     local_lib_cpart_target = static_library('cpart' + target,
-				            pic: false,
+				            pic: use_pic,
 				            objects : libobjs,
 					    include_directories: inc,
 					    c_args: target_c_args + c_args)

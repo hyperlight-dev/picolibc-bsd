@@ -38,7 +38,7 @@
 #define PRINTF_NAME    __d_vfprintf
 #endif
 
-#include "stdio_private.h"
+#include "local-stdio.h"
 #include "../../libm/common/math_config.h"
 #include "../stdlib/local.h"
 
@@ -273,28 +273,34 @@ typedef long          ultoa_signed_t;
 #define FL_LONG      0x0080
 #define FL_SHORT     0x0100
 #define FL_REPD_TYPE 0x0200
+#define FL_WF        0x0400
 
-#define FL_NEGATIVE  0x0400
+#define FL_NEGATIVE  0x0800
 
 #ifdef _NEED_IO_C99_FORMATS
-#define FL_FLTHEX 0x0800
+#define FL_FLTHEX 0x1000
 #endif
-#define FL_FLTEXP 0x1000
-#define FL_FLTFIX 0x2000
+#define FL_FLTEXP 0x2000
+#define FL_FLTFIX 0x4000
+
+#define SET_INT_SIZE(size, flags)         \
+    if (size == sizeof(int))              \
+        ;                                 \
+    else if (size == sizeof(long))        \
+        flags |= FL_LONG;                 \
+    else if (size == sizeof(long long))   \
+        flags |= FL_LONG | FL_REPD_TYPE;  \
+    else if (size == sizeof(short))       \
+        flags |= FL_SHORT;                \
+    else if (size == sizeof(char))        \
+        flags |= FL_SHORT | FL_REPD_TYPE;
 
 #ifdef _NEED_IO_C99_FORMATS
 
-#define CHECK_INT_SIZE(c, flags, letter, type)      \
-    if (c == letter) {                              \
-        if (sizeof(type) == sizeof(int))            \
-            ;                                       \
-        else if (sizeof(type) == sizeof(long))      \
-            flags |= FL_LONG;                       \
-        else if (sizeof(type) == sizeof(long long)) \
-            flags |= FL_LONG | FL_REPD_TYPE;        \
-        else if (sizeof(type) == sizeof(short))     \
-            flags |= FL_SHORT;                      \
-        continue;                                   \
+#define CHECK_INT_SIZE(c, flags, letter, type) \
+    if (c == letter) {                         \
+        SET_INT_SIZE(sizeof(type), flags);     \
+        continue;                              \
     }
 
 #define CHECK_C99_INT_SIZES(c, flags)         \
@@ -304,6 +310,86 @@ typedef long          ultoa_signed_t;
 
 #else
 #define CHECK_C99_INT_SIZES(c, flags)
+#endif
+
+#ifdef __IO_LENGTH_W
+
+#ifdef __INT_FAST8_TYPE__
+#define CHECK_INT_FAST8_SIZE(wlen, flags)         \
+    if (wlen == 1) {                              \
+        SET_INT_SIZE(sizeof(int_fast8_t), flags); \
+    }
+#else
+#define CHECK_INT_FAST8_SIZE(wlen, flags)
+#endif
+
+#ifdef __INT_FAST16_TYPE__
+#define CHECK_INT_FAST16_SIZE(wlen, flags)         \
+    if (wlen == 2) {                               \
+        SET_INT_SIZE(sizeof(int_fast16_t), flags); \
+    }
+#else
+#define CHECK_INT_FAST16_SIZE(wlen, flags)
+#endif
+
+#ifdef __INT_FAST32_TYPE__
+#define CHECK_INT_FAST32_SIZE(wlen, flags)         \
+    if (wlen == 4) {                               \
+        SET_INT_SIZE(sizeof(int_fast32_t), flags); \
+    }
+#else
+#define CHECK_INT_FAST32_SIZE(wlen, flags)
+#endif
+
+#ifdef __INT_FAST64_TYPE__
+#define CHECK_INT_FAST64_SIZE(wlen, flags)         \
+    if (wlen == 8) {                               \
+        SET_INT_SIZE(sizeof(int_fast64_t), flags); \
+    }
+#else
+#define CHECK_INT_FAST64_SIZE(wlen, flags)
+#endif
+
+#ifdef __INT_FAST128_TYPE__
+#define CHECK_INT_FAST128_SIZE(wlen, flags)         \
+    if (wlen == 16) {                               \
+        SET_INT_SIZE(sizeof(int_fast128_t), flags); \
+    }
+#else
+#define CHECK_INT_FAST128_SIZE(wlen, flags)
+#endif
+
+#define SET_FAST_INT_SIZE(wlen, flags)   \
+    CHECK_INT_FAST8_SIZE(wlen, flags);   \
+    CHECK_INT_FAST16_SIZE(wlen, flags);  \
+    CHECK_INT_FAST32_SIZE(wlen, flags);  \
+    CHECK_INT_FAST64_SIZE(wlen, flags);  \
+    CHECK_INT_FAST128_SIZE(wlen, flags);
+
+#define CHECK_WLEN_SIZES(c, flags)              \
+    if (c == 'w') {                             \
+        int wlen = 0;                           \
+        c = *fmt++;                             \
+        if (c == 'f') {                         \
+            c = *fmt++;                         \
+            flags |= FL_WF;                     \
+        }                                       \
+        while ('0' <= c && c <= '9') {          \
+            wlen = wlen * 10 + (c - '0');       \
+            c = *fmt++;                         \
+        }                                       \
+        if (wlen) {                             \
+            wlen >>= 3;                         \
+            if (flags & FL_WF) {                \
+                SET_FAST_INT_SIZE(wlen, flags); \
+            } else {                            \
+                SET_INT_SIZE(wlen, flags);      \
+            }                                   \
+        }                                       \
+        break;                                  \
+    }
+#else
+#define CHECK_WLEN_SIZES(c, flags)
 #endif
 
 #define CHECK_INT_SIZES(c, flags)      \
@@ -329,6 +415,7 @@ typedef long          ultoa_signed_t;
             continue;                  \
         }                              \
         CHECK_C99_INT_SIZES(c, flags); \
+        CHECK_WLEN_SIZES(c, flags);    \
     }
 
 #ifdef _NEED_IO_POS_ARGS
@@ -439,7 +526,10 @@ skip_to_arg(const CHAR *fmt_orig, my_va_list *ap, int target_argno)
             ) {
                 SKIP_FLOAT_ARG(flags, ap->ap);
             } else if (c == 'c') {
-                (void)va_arg(ap->ap, int);
+                if (flags & FL_LONG)
+                    (void)va_arg(ap->ap, __typeof__(+(wint_t)0));
+                else
+                    (void)va_arg(ap->ap, int);
             } else if (c == 's') {
                 (void)va_arg(ap->ap, char *);
             } else if (c == 'd' || c == 'i') {
@@ -471,11 +561,39 @@ _mbslen(const wchar_t *s, size_t maxlen)
     while (len < maxlen && (c = *s++) != L'\0') {
         int clen;
         clen = __WCTOMB(tmp, c, &ps);
-        if (clen == -1)
+        if (clen < 0)
             return (size_t)clen;
+#if __SIZEOF_WCHAR_T__ == 2
+        /* Check for trailing surrogate */
+        if (clen == 0 && *s == L'\0')
+            return (size_t)-1;
+#endif
+
+        /* Don't output partial chars */
+        if (len + clen > maxlen)
+            break;
+
         len += clen;
     }
     return len;
+}
+
+/*
+ * Compute the number of bytes to encode a wide char
+ * in the current locale
+ */
+static size_t
+_mbclen(wchar_t c)
+{
+    mbstate_t ps = { 0 };
+    char      tmp[MB_LEN_MAX];
+    int       clen = __WCTOMB(tmp, c, &ps);
+#if __SIZEOF_WCHAR_T__ == 2
+    /* lone UTF-16 surrogate is an error */
+    if (clen == 0)
+        clen = -1;
+#endif
+    return (size_t)clen;
 }
 
 #endif
@@ -500,6 +618,14 @@ _wcslen(const char *s, size_t maxlen)
         s += clen;
         len++;
     }
+#if __SIZEOF_WCHAR_T__ == 2
+    /*
+     * For UTF-16, we'll get this count if a high surrogate would
+     * fit but we dont't have space for the low surrogate.
+     */
+    if (ps.__count == 4)
+        len--;
+#endif
     return len;
 }
 #endif
@@ -544,12 +670,13 @@ vfprintf(FILE *stream, const CHAR *fmt, va_list ap_orig)
 #ifdef VFPRINTF_S
     const char *msg;
 
-    if (stream == NULL) {
-        msg = "output stream is null";
-        goto handle_error;
-    } else if (fmt == NULL) {
-        msg = "null format string";
-        goto handle_error;
+    if (stream == NULL || fmt == NULL) {
+        msg = stream == NULL ? "output stream is null" : "null format string";
+        if (__cur_handler != 0)
+            __cur_handler(msg, NULL, -1);
+        if (stream)
+            stream->flags |= __SERR;
+        return -1;
     }
 #endif
 
@@ -795,20 +922,21 @@ ret:
 #endif
     __funlock_return(stream, stream_len);
 #undef my_putc
-#undef ap
 fail:
     stream->flags |= __SERR;
     stream_len = -1;
     goto ret;
 #ifdef VFPRINTF_S
 handle_error:
-    if (__cur_handler != NULL) {
+    if (__cur_handler != 0)
         __cur_handler(msg, NULL, -1);
-    }
-    if (stream)
-        stream->flags |= __SERR;
-    return -1;
+    stream->flags |= __SERR;
+#ifdef _NEED_IO_POS_ARGS
+    va_end(ap);
 #endif
+    __funlock_return(stream, -1);
+#endif
+#undef ap
 }
 
 #if !defined(VFPRINTF_S) && !defined(WIDE_CHARS)

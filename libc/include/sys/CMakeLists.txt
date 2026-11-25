@@ -41,12 +41,15 @@ picolibc_headers(sys
   dirent.h
   dir.h
   errno.h
+  _exactint.h
+  _fastint.h
   fcntl.h
   features.h
   file.h
   iconvnls.h
   _initfini.h
   _intsup.h
+  _leastint.h
   _locale.h
   lock.h
   param.h
@@ -57,9 +60,11 @@ picolibc_headers(sys
   _select.h
   _sigset.h
   stat.h
+  statvfs.h
   _stdint.h
   string.h
   syslimits.h
+  termios.h
   timeb.h
   time.h
   times.h
@@ -69,7 +74,6 @@ picolibc_headers(sys
   tree.h
   _types.h
   types.h
-  _tz_structs.h
   unistd.h
   utime.h
   wait.h

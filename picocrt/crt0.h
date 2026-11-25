@@ -97,13 +97,19 @@ int get_cmdline(char *buffer, int size);
 #endif
 
 static __noreturn __always_inline void
+#ifdef CRT0_LINUX
+__start(int argc, char **argv)
+#else
 __start(void)
+#endif
 {
 #ifndef NO_FLASH
     /* Initialize .data from FLASH when enabled */
     memcpy(__data_start, __data_source, (uintptr_t)__data_size);
 #endif
+#ifndef CRT0_LINUX
     memset(__bss_start, '\0', (uintptr_t)__bss_size);
+#endif
 #ifdef POST_MEMORY_SETUP
     POST_MEMORY_SETUP();
 #endif
@@ -120,8 +126,13 @@ __start(void)
 #endif
 
 #if defined(CRT0_GET_CMDLINE) || (defined(CRT0_SEMIHOST) && defined(__ARM_SEMIHOST))
+#if __SIZEOF_POINTER__ == 2
+#define CMDLINE_LEN 256 /* keep static buffers small on 16-bit targets */
+#define ARGV_LEN    16
+#else
 #define CMDLINE_LEN 1024
 #define ARGV_LEN    64
+#endif
     static char  cmdline[CMDLINE_LEN];
     static char *argv[ARGV_LEN];
     int          argc = 0;
@@ -149,8 +160,10 @@ __start(void)
         argv[argc++] = "program-name";
     argv[argc] = NULL;
 #else
-#define argv NULL
+#ifndef CRT0_LINUX
 #define argc 0
+#define argv NULL
+#endif
 #endif
 
     int ret = main(argc, argv);

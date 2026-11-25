@@ -33,7 +33,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "stdio_private.h"
+#include "local-stdio.h"
 
 int
 __bufio_close(FILE *f)
@@ -55,7 +55,10 @@ __bufio_close(FILE *f)
      * FILE structs defined for stdin/stdout/stderr.
      */
     if (bf->bflags & __BFALL) {
-        ret = bufio_close(bf);
+        int close_ret = bufio_close(bf);
+        if (close_ret)
+            ret = close_ret;
+        bufio_remove_file(f);
         free(f);
     }
     return ret;

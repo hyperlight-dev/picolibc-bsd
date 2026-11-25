@@ -29,7 +29,7 @@
 
 /* $Id: fdevopen.c 1944 2009-04-01 23:12:20Z arcanum $ */
 
-#include "stdio_private.h"
+#include "local-stdio.h"
 
 /** \file */
 
@@ -82,9 +82,9 @@
 static int
 fdevclose(FILE *f)
 {
-    int ret = 0;
+    int ret;
 
-    fflush(f);
+    ret = fflush(f);
     free(f);
     return ret;
 }

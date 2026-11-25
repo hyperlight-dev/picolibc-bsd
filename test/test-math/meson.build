@@ -36,44 +36,93 @@
 tests_real_trig = [
   'test-acos',
   'test-acosh',
+  'test-acospi',
   'test-asin',
   'test-asinh',
+  'test-asinpi',
   'test-atan',
   'test-atan2',
   'test-atanh',
+  'test-atanpi',
+  'test-atan2pi',
   'test-cos',
   'test-cosh',
+  'test-cospi',
   'test-sin',
   'test-sincos-cos',
   'test-sincos-sin',
   'test-sinh',
+  'test-sinpi',
   'test-tan',
-  'test-tanh'
+  'test-tanh',
+  'test-tanpi',
 ]
 
 tests_real_exp = [
+  'test-compoundn',
   'test-exp',
   'test-exp10',
   'test-exp2',
   'test-expm1',
+  'test-exp10m1',
+  'test-exp2m1',
   'test-log',
   'test-log10',
   'test-log1p',
+  'test-log10p1',
+  'test-log2p1',
   'test-log2',
-  'test-pow'
+  'test-pow',
+  'test-pown',
+  'test-powr',
+  'test-rootn',
+]
+
+tests_real_narrow = [
+  'test-fadd',
+  'test-fsub',
+  'test-fmul',
+  'test-fdiv',
+  'test-fsqrt',
+  'test-ffma',
+  'test-dadd',
+  'test-dsub',
+  'test-dmul',
+  'test-ddiv',
+  'test-dsqrt',
+  'test-dfma',
 ]
 
 tests_real_other = [
+  'test-add',
   'test-cbrt',
+  'test-ceil',
   'test-erf',
   'test-erfc',
+  'test-floor',
+  'test-fromfp',
+  'test-fromfpx',
   'test-hypot',
   'test-j0',
   'test-j1',
   'test-jn',
   'test-lgamma',
+  'test-nextafter',
+  'test-nextdown',
+  'test-nextup',
+  'test-remainder',
+  'test-remquo-quo',
+  'test-round',
+  'test-roundeven',
+  'test-rsqrt',
+  'test-setpayload',
+  'test-setpayloadsig',
   'test-sqrt',
-  'test-tgamma'
+  'test-tgamma',
+  'test-totalorder',
+  'test-totalordermag',
+  'test-ufromfp',
+  'test-ufromfpx',
 ]
 
 tests_complex_trig = [
@@ -98,26 +147,60 @@ tests_complex_exp = [
 ]
 
 tests_complex_other = [
-  'test-csqrt'
+  'test-csqrt',
+  'test-complex-funcs',
 ]
 
-tests = tests_real_trig + tests_real_exp + tests_real_other
-tests += tests_complex_trig + tests_complex_exp + tests_complex_other
+tests_other = [
+  'test-fenv',
+  'test-fma',
+  'test-long-double',
+  'test-math-errhandling',
+  'test-math-funcs',
+  'test-rounding-mode',
+  'test-scalbn',
+  ]
 
-functions = [ 'acos', 'acosh', 'asin', 'asinh', 'atan', 'atanh',
-              'cbrt', 'cos', 'cosh', 'erf', 'erfc', 'exp', 'exp10', 'exp2',
-              'expm1', 'j0', 'j1', 'lgamma', 'log', 'log10', 'log1p', 'log2',
-              'sin', 'sincos_cos', 'sincos_sin', 'sinh', 'sqrt', 'tan', 'tanh', 'tgamma', 'y0', 'y1',
-            ]
+tests = tests_real_trig + tests_real_exp + tests_real_narrow + tests_real_other
+tests += tests_complex_trig + tests_complex_exp + tests_complex_other
+tests += tests_other
+
+functions = [ 'acos', 'acosh', 'acospi', 'asin', 'asinh', 'asinpi',
+              'atan', 'atanh', 'atanpi', 'cbrt', 'ceil', 'cos',
+              'cosh', 'cospi', 'erf', 'erfc', 'exp', 'exp10', 'exp2',
+              'expm1', 'exp10m1', 'exp2m1', 'floor', 'j0', 'j1',
+              'lgamma', 'log', 'log10', 'log1p', 'log2', 'log10p1',
+              'log2p1', 'round', 'roundeven', 'rsqrt', 'sin', 'sinpi',
+              'sincos_cos', 'sincos_sin', 'sinh', 'sqrt', 'tan',
+              'tanh', 'tanpi', 'tgamma', 'y0', 'y1', ]
+
+test_extra_libs = {}
+
+test_extra_src = {
+  'test-rounding-mode': files(['test-rounding-mode-sub.c']),
+  }
+
+test_extra_c_args = {
+  'test-math-errhandling': arg_fnobuiltin,
+  'test-rounding-mode': arg_fnobuiltin
+}
+
+test_args = {}
+
+test_skip_native = [
+]
 
 foreach params : targets
   target = params['name']
   target_dir = params['dir']
   target_c_args = params['c_args']
 
-  _libs = [get_variable('lib_c' + target)]
-  if is_variable('lib_semihost' + target)
-    _libs += [get_variable('lib_semihost' + target)]
+  _libs = [get_variable('lib_c_link' + target)]
+  if is_variable(oslib_test + target)
+    _libs += [get_variable(oslib_test + target)]
+  endif
+  if is_variable(libfallback_var + target)
+    _libs += [get_variable(libfallback_var + target)]
   endif
 
   _lib_files=[]
@@ -139,28 +222,30 @@ foreach params : targets
     test_file_name_arg=['-DTEST_FILE_NAME="' + t1 + target + '.txt"']
 
     test(t1 + target,
-	 executable(t1 + target, [t1_src],
-		    c_args: printf_compile_args_d + test_file_name_arg + _c_args,
+	 executable(t1 + target, [t1_src] + test_extra_src.get(t1, []) + test_lock_valid,
+		    c_args: printf_compile_args_d + test_file_name_arg + test_extra_c_args.get(t1, []) + _c_args,
 		    link_args: printf_link_args_d + _link_args,
 		    objects: _objs,
 		    link_depends:  _link_depends,
+                    link_with: test_extra_libs.get(t1, []),
 		    include_directories: inc),
          depends: bios_bin,
-	 timeout: 60,
+	 timeout: 120,
          suite: 'test-math',
 	 env: test_env)
   endforeach
 
   if enable_exhaustive_math_tests
     foreach f : functions
-      test_name = 'test-math-compare-' + f
+      test_name = 'test-math-compare-' + f + target
       test_function_name_arg=['-DTEST_FUNC=' + f]
       test(test_name,
            executable(test_name, 'test-math-compare.c',
-                      c_args: printf_compile_args_d + test_function_name_arg + _c_args,
+                      c_args: printf_compile_args_d + test_function_name_arg + test_extra_c_args.get(test_name, []) + _c_args,
                       link_args: printf_link_args_d + _link_args,
                       objects: _objs,
                       link_depends: _link_depends,
+                      link_with: test_extra_libs.get(test_name, []),
                       include_directories: inc),
            depends: bios_bin,
 	   timeout: 7200,
@@ -173,19 +258,22 @@ endforeach
 
 if enable_native_math_tests
 
-  native_lib_m = cc.find_library('m', required: false)
-
   foreach t1 : tests
+    if t1 in test_skip_native
+      continue
+    endif
+
     t1_src = t1 + '.c'
     t1_name = t1 + '-native'
     test_file_name_arg=['-DTEST_FILE_NAME="' + t1_name + '.txt"']
 
     test(t1_name,
-	 executable(t1_name, t1_src,
+	 executable(t1_name, [t1_src] + test_extra_src.get(t1, []),
 		    c_args: native_c_args + test_file_name_arg + ctype_c_args,
 		    link_args: native_c_args,
                     dependencies: native_lib_m),
-         suite: 'test-math'
+         suite: 'test-math',
+         env: test_env
         )
   endforeach
 
@@ -200,6 +288,7 @@ if enable_native_math_tests
 		      link_args: native_c_args,
                       dependencies: native_lib_m),
            suite: 'test-math-compare',
+           env: test_env,
            timeout: 7200,
           )
     endforeach

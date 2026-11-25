@@ -34,6 +34,10 @@
 #!/bin/sh
 dir="$(dirname "$0")"
 
+if $dir/check-ci "$1"; then
+    exit 77
+fi
+
 simulator="qemu-system-hexagon"
 # select the program
 elf="$1"
@@ -64,4 +68,4 @@ while [ $# -gt 0 -a $done -eq 0 ]; do
   esac
 done
 
-echo $stdin | $simulator  -cpu v68 -M virt -kernel $elf -append "$args"
+echo $stdin | $simulator  -cpu v68 -M virt -kernel $elf -append "$args" "$@"

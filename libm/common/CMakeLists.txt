@@ -52,6 +52,8 @@ picolibc_sources(
   s_log1p.c
   s_nan.c
   s_nextafter.c
+  s_nextup.c
+  s_nextdown.c
   s_pow10.c
   s_rint.c
   s_logb.c
@@ -73,6 +75,9 @@ picolibc_sources(
   s_signbit.c
   s_trunc.c
   exp_data.c
+  math_denorm.c
+  math_denormf.c
+  math_denorml.c
   math_err_with_errno.c
   math_err_uflow.c
   math_err_oflow.c
@@ -104,6 +109,8 @@ picolibc_sources(
   sf_log1p.c
   sf_nan.c
   sf_nextafter.c
+  sf_nextdown.c
+  sf_nextup.c
   sf_pow10.c
   sf_rint.c
   sf_logb.c

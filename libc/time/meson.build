@@ -41,7 +41,6 @@ srcs_time = [
     'difftime.c',
     'getdate.c',
     'getdate_r.c',
-    'gettzinfo.c',
     'gmtime.c',
     'gmtime_r.c',
     'lcltime.c',
@@ -53,6 +52,8 @@ srcs_time = [
     'strptime.c',
     'strptime_l.c',
     'time.c',
+    'timespec_get.c',
+    'timespec_getres.c',
     'tzcalc_limits.c',
     'tzset.c',
     'tzvars.c',
@@ -70,6 +71,8 @@ foreach file : srcs_time
     message('libc/time/' + file + ': machine overrides generic')
   elif s_file in srcs_machine
     message('libc/time/' + s_file + ': machine overrides generic')
+  elif file in srcs_libos
+    message('libc/time/' + file + ': libos overrides generic')
   else
     srcs_time_use += file
   endif

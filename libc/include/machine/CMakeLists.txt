@@ -34,7 +34,7 @@
 #
 picolibc_headers(machine
   ansi.h
-  _arc4random.h
+  _clockid.h
   _default_types.h
   _endian.h
   endian.h
@@ -48,6 +48,7 @@ picolibc_headers(machine
   setjmp.h
   stdlib.h
   termios.h
+  _sched.h
   _time.h
   time.h
   _types.h

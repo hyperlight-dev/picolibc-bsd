@@ -41,6 +41,7 @@ srcs_stdio = [
   'bufio.c',
   'bufio_close.c',
   'bufio_close_nf.c',
+  'bufio_exit_flush.c',
   'bufio_setvbuf.c',
   'clearerr.c',
   'compare_exchange.c',
@@ -75,9 +76,11 @@ srcs_stdio = [
   'filestrputalloc.c',
   'filestrput.c',
   'filewstrget.c',
+  'filewstrput.c',
   'flockfile.c',
   'flockfile_init.c',
   'fmemopen.c',
+  'open_memstream.c',
   'fopen.c',
   'fprintf.c',
   'fputc.c',
@@ -89,12 +92,14 @@ srcs_stdio = [
   'fscanf.c',
   'fseek.c',
   'fseeko.c',
+  'fseterr.c',
   'fsetpos.c',
   'ftell.c',
   'ftello.c',
   'ftox_engine.c',
   'ftrylockfile.c',
   'funlockfile.c',
+  'fopencookie.c',
   'funopen.c',
   'fwide.c',
   'fwprintf.c',
@@ -112,7 +117,9 @@ srcs_stdio = [
   'ldtox_engine.c',
   'matchcaseprefix.c',
   'mktemp.c',
+  'pclose.c',
   'perror.c',
+  'popen.c',
   'printf.c',
   'putchar.c',
   'puts.c',
@@ -255,6 +262,8 @@ foreach file : srcs_stdio
     message('libc/stdio/' + file + ': machine overrides generic')
   elif s_file in srcs_machine
     message('libc/stdio/' + s_file + ': machine overrides generic')
+  elif file in srcs_libos
+    message('libc/stdio/' + file + ': libos overrides generic')
   else
     srcs_stdio_use += file
   endif

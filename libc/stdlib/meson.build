@@ -35,9 +35,12 @@
 malloc_srcs_stdlib = [
   'calloc.c',
   'free.c',
+  'free_aligned_sized.c',
+  'free_sized.c',
   'getpagesize.c',
   'mallinfo.c',
   'malloc.c',
+  'malloc-error.c',
   'malloc-stats.c',
   'malloc-usable-size.c',
   'mallopt.c',
@@ -58,6 +61,7 @@ srcs_stdlib = [
     'assert.c',
     'assert_func.c',
     'assert_no_arg.c',
+    'at-quick-exit.c',
     'atexit.c',
     'atof.c',
     'atoff.c',
@@ -66,6 +70,7 @@ srcs_stdlib = [
     'atoll.c',
     'btowc.c',
     'cxa-atexit.c',
+    'cxa-at-quick-exit.c',
     'div.c',
     'drand48.c',
     'ejtouc.c',
@@ -75,8 +80,8 @@ srcs_stdlib = [
     'exit.c',
     'exitprocs.c',
     '_Exit.c',
+    '_findenv.c',
     'getenv.c',
-    'getenv_r.c',
     'getopt.c',
     'getsubopt.c',
     'imaxabs.c',
@@ -100,10 +105,12 @@ srcs_stdlib = [
     'mbstowcs.c',
     'mbtowc.c',
     'mbtowc_r.c',
+    'memalignment.c',
     'mrand48.c',
     'nrand48.c',
     'onexit.c',
     'putenv.c',
+    'quick-exit.c',
     'rand48.c',
     'rand.c',
     'random.c',
@@ -122,6 +129,7 @@ srcs_stdlib = [
     'uctoji.c',
     'uctoej.c',
     'uctosj.c',
+    'unsetenv.c',
     'utoa.c',
     'wcrtomb.c',
     'wcsnrtombs.c',
@@ -145,6 +153,8 @@ foreach file : srcs_stdlib
     message('libc/stdlib/' + file + ': machine overrides generic')
   elif s_file in srcs_machine
     message('libc/stdlib/' + s_file + ': machine overrides generic')
+  elif file in srcs_libos
+    message('libc/stdlib/' + file + ': libos overrides generic')
   else
     srcs_stdlib_use += file
   endif

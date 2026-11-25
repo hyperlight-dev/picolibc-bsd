@@ -349,6 +349,8 @@ conv_flt(FLT_STREAM *stream, FLT_CONTEXT *context, width_t width, void *addr, ui
                 c = i - CQ('0');
 
             if (c < base) {
+                if (flags & FL_ANY)
+                    flags |= FL_TWO;
                 flags |= FL_ANY;
                 if (!(flags & FL_OVFL) && uintdigits > uintdigitsmax) {
                     flags |= FL_OVFL;
@@ -377,8 +379,10 @@ conv_flt(FLT_STREAM *stream, FLT_CONTEXT *context, width_t width, void *addr, ui
             } else if (c == (UCHAR)((CQ('.') - CQ('0'))) && !(flags & FL_DOT)) {
                 flags |= FL_DOT;
 #ifdef _NEED_IO_C99_FORMATS
-            } else if (TOLOWER(i) == CQ('x') && (flags & FL_ANY) && UF_IS_ZERO(uint)) {
+            } else if (TOLOWER(i) == CQ('x') && ((flags & (FL_ANY | FL_TWO | FL_FHEX)) == FL_ANY)
+                       && UF_IS_ZERO(uint)) {
                 flags |= FL_FHEX;
+                flags &= ~(FL_ANY | FL_TWO);
                 base = 16;
 #endif
             } else {
@@ -386,8 +390,17 @@ conv_flt(FLT_STREAM *stream, FLT_CONTEXT *context, width_t width, void *addr, ui
             }
         } while (CHECK_WIDTH() && !IS_EOF(i = scanf_getc(stream, context)));
 
-        if (!(flags & FL_ANY))
-            return 0;
+        if (!(flags & FL_ANY)) {
+            if (!(flags & FL_FHEX)) {
+                scanf_ungetc(i, stream, context);
+                return 0;
+            }
+#if defined(STRTOD) || defined(STRTOF) || defined(STRTOLD)
+            scanf_ungetc(i, stream, context);
+            scanf_ungetc(i, stream, context);
+            i = scanf_getc(stream, context);
+#endif
+        }
 
 #ifdef _NEED_IO_C99_FORMATS
         INT exp_match = CQ('e');
@@ -410,6 +423,7 @@ conv_flt(FLT_STREAM *stream, FLT_CONTEXT *context, width_t width, void *addr, ui
             switch (esign) {
             case CQ('-'):
                 flags |= FL_MEXP;
+                exp = -exp;
                 __fallthrough;
             case CQ('+'):
                 if (!CHECK_WIDTH()) {
@@ -433,17 +447,17 @@ conv_flt(FLT_STREAM *stream, FLT_CONTEXT *context, width_t width, void *addr, ui
 
             i = edig;
             expacc = 0;
-#define MAX_POSSIBLE_EXP (FLOAT_MAX_EXP + FLOAT_MANT_DIG * 4)
+#define MAX_POSSIBLE_EXP (-FLOAT_MIN_EXP + FLOAT_MANT_DIG * 4)
             do {
-                if (expacc < MAX_POSSIBLE_EXP)
+                if (expacc + exp < MAX_POSSIBLE_EXP)
                     expacc = expacc * 10 + (i - CQ('0'));
             } while (CHECK_WIDTH() && isdigit(i = scanf_getc(stream, context)));
-            if (flags & FL_MEXP)
-                expacc = -expacc;
             exp += expacc;
+        no_exp:
+            if (flags & FL_MEXP)
+                exp = -exp;
         }
 
-    no_exp:
         if (width)
             scanf_ungetc(i, stream, context);
 

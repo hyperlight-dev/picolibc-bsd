@@ -33,7 +33,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "stdio_private.h"
+#include "local-stdio.h"
 
 #ifdef __STDIO_BUFIO_LOCKING
 void
@@ -63,7 +63,6 @@ __bufio_flush_locked(FILE *f)
             if (this <= 0) {
                 bf->len = 0;
                 return _FDEV_ERR;
-                break;
             }
             buf += this;
             bf->pos += this;
@@ -73,9 +72,17 @@ __bufio_flush_locked(FILE *f)
     case __SRD:
         /* Move the FD back to the current read position */
         backup = bf->len - bf->off;
+        if (__atomic_load_ungetc(&f->unget) != 0) {
+            if (backup < bf->pos)
+                backup++;
+        }
         if (backup) {
+            if (bufio_lseek(bf, bf->pos - backup, SEEK_SET) < 0) {
+                if (errno == ESPIPE)
+                    return 0;
+                return _FDEV_ERR;
+            }
             bf->pos -= backup;
-            (void)bufio_lseek(bf, bf->pos, SEEK_SET);
         }
         bf->len = 0;
         bf->off = 0;
@@ -83,6 +90,7 @@ __bufio_flush_locked(FILE *f)
     default:
         break;
     }
+    __atomic_store_ungetc(&f->unget, 0);
     return 0;
 }
 
@@ -130,6 +138,11 @@ __bufio_setdir_locked(FILE *f, uint8_t dir)
 
     if (bf->dir != dir) {
         ret = __bufio_flush_locked(f);
+
+        __atomic_store_ungetc(&f->unget, 0);
+
+        bf->len = 0;
+        bf->off = 0;
         bf->dir = dir;
     }
     return ret;
@@ -214,39 +227,61 @@ off_t
 __bufio_seek(FILE *f, off_t offset, int whence)
 {
     struct __file_bufio *bf = (struct __file_bufio *)f;
-    off_t                ret;
+    off_t                ret = _FDEV_ERR;
 
     __bufio_lock(f);
-    if (__bufio_setdir_locked(f, __SRD) < 0) {
-        ret = _FDEV_ERR;
-    } else {
-        /* compute offset of the first char in the buffer */
-        __off_t buf_pos = bf->pos - bf->len;
+    if (!bufio_seekable(bf)) {
+        errno = ESPIPE;
+        goto exit;
+    }
 
-        switch (whence) {
-        case SEEK_CUR:
-            /* Map CUR -> SET, accounting for position within buffer */
-            whence = SEEK_SET;
-            offset += buf_pos + bf->off;
-            __fallthrough;
-        case SEEK_SET:
-            /* Optimize for seeks within buffer or just past buffer */
-            if (buf_pos <= offset && offset <= buf_pos + bf->len) {
-                bf->off = offset - buf_pos;
-                ret = offset;
-                break;
-            }
-            __fallthrough;
-        default:
-            ret = bufio_lseek(bf, offset, whence);
-            if (ret >= 0)
-                bf->pos = ret;
+    if (bf->dir == __SWR) {
+
+        /* Short-circuit for ftell in write mode */
+        if (whence == SEEK_CUR && offset == 0) {
+            ret = bf->pos + bf->len;
+            goto exit;
+        }
+
+        /*
+         * With any pending writes, we need to flush before we change
+         * position. Switching to read mode means we can share the
+         * same logic once the buffer is empty.
+         */
+        if (__bufio_setdir_locked(f, __SRD) < 0) {
+            goto exit;
+        }
+    }
+
+    /* compute offset of the first char in the buffer */
+    __off_t buf_pos = bf->pos - bf->len;
+
+    switch (whence) {
+    case SEEK_CUR:
+        /* Map CUR -> SET, accounting for position within buffer */
+        whence = SEEK_SET;
+        offset += buf_pos + bf->off;
+        __fallthrough;
+    case SEEK_SET:
+        /* Optimize for seeks within buffer or just past buffer */
+        if (buf_pos <= offset && offset <= buf_pos + bf->len) {
+            bf->off = offset - buf_pos;
+            ret = offset;
+            break;
+        }
+        __fallthrough;
+    default:
+        ret = bufio_lseek(bf, offset, whence);
+        if (ret >= 0) {
+            bf->pos = ret;
             /* Flush any buffered data after a real seek */
             bf->len = 0;
             bf->off = 0;
-            break;
         }
+        break;
     }
+
+exit:
     __bufio_unlock(f);
     return ret;
 }

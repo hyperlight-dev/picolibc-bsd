@@ -33,7 +33,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "stdio_private.h"
+#include "local-stdio.h"
 
 FILE *
 freopen(const char *pathname, const char *mode, FILE *stream)
@@ -61,7 +61,7 @@ freopen(const char *pathname, const char *mode, FILE *stream)
     } else
         fd = (int)(intptr_t)(pf->ptr);
 
-    fflush(stream);
+    (void)__fflush_locked(stream);
 
     __bufio_lock(stream);
 
@@ -79,12 +79,21 @@ freopen(const char *pathname, const char *mode, FILE *stream)
     pf->close_int = close;
 
     /* Reset buffer mode and size */
+    int (*setvbuf)(struct __file *, char *buf, int mode, size_t size) = 0;
+
     buf_size = bufio_get_buf_size(fd);
-    if (buf_size != pf->size || (pf->bflags & __BLBF))
-        (pf->xfile.setvbuf ? pf->xfile.setvbuf : __bufio_setvbuf)(stream, NULL, _IOFBF, buf_size);
+    if (buf_size != pf->size || (pf->bflags & __BLBF)) {
+        setvbuf = pf->xfile.setvbuf;
+        if (!setvbuf)
+            setvbuf = __bufio_setvbuf;
+    }
 
     ret = stream;
     __bufio_unlock(stream);
+
+    if (setvbuf)
+        (void)(*setvbuf)(stream, NULL, _IOFBF, buf_size);
+
 exit:
     __funlock_return(stream, ret);
 }

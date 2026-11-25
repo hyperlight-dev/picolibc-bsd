@@ -40,10 +40,9 @@
 
 static TEST_CONST struct {
     binary32 x, y;
-    ulp_t    ulp;
 } test_32_vec[] = {
-#define REAL(r32, r64, r80, r128)     r32
-#define REAL_ULP(r32, r64, r80, r128) r32
+#define REAL(r32, r64, r80, r80m, r128)     r32
+#define REAL_ULP(r32, r64, r80, r80m, r128) r32
 #include TEST_VECTORS
 #undef REAL
 #undef REAL_ULP
@@ -63,8 +62,14 @@ test_binary32(void)
             printf("Skipping denorm value\n");
             continue;
         }
-        binary32 y = TEST_FUNC_32(test_32_vec[i].x);
-        ulp_t    ulp = ulp32(y, test_32_vec[i].y);
+#ifdef TEST_FUNC_REF
+        volatile binary32 y;
+        (void)TEST_FUNC_32((binary32 *)&y, test_32_vec[i].x);
+        ulp_t ulp = ulp32_r((const binary32 *)&y, &test_32_vec[i].y);
+#else
+        volatile binary32 y = TEST_FUNC_32(test_32_vec[i].x);
+        ulp_t             ulp = ulp32(y, test_32_vec[i].y);
+#endif
         if (ulp > max_ulp)
             max_ulp = ulp;
         if (ulp > math_ulp_binary32) {
@@ -83,10 +88,9 @@ test_binary32(void)
 #if defined(HAS_BINARY64) && !defined(SKIP_BINARY64)
 static TEST_CONST struct {
     binary64 x, y;
-    ulp_t    ulp;
 } test_64_vec[] = {
-#define REAL(r32, r64, r80, r128)     r64
-#define REAL_ULP(r32, r64, r80, r128) r64
+#define REAL(r32, r64, r80, r80m, r128)     r64
+#define REAL_ULP(r32, r64, r80, r80m, r128) r64
 #include TEST_VECTORS
 #undef REAL
 #undef REAL_ULP
@@ -106,8 +110,14 @@ test_binary64(void)
             printf("Skipping denorm value\n");
             continue;
         }
-        binary64 y = TEST_FUNC_64(test_64_vec[i].x);
-        ulp_t    ulp = ulp64(y, test_64_vec[i].y);
+#ifdef TEST_FUNC_REF
+        volatile binary64 y;
+        (void)TEST_FUNC_64((binary64 *)&y, test_64_vec[i].x);
+        ulp_t ulp = ulp64_r((const binary64 *)&y, &test_64_vec[i].y);
+#else
+        volatile binary64 y = TEST_FUNC_64(test_64_vec[i].x);
+        ulp_t             ulp = ulp64(y, test_64_vec[i].y);
+#endif
         if (ulp > max_ulp)
             max_ulp = ulp;
         if (ulp > math_ulp_binary64) {
@@ -127,10 +137,9 @@ test_binary64(void)
 #if defined(HAS_BINARY80) && !defined(SKIP_BINARY80)
 static TEST_CONST struct {
     binary80 x, y;
-    ulp_t    ulp;
 } test_80_vec[] = {
-#define REAL(r32, r64, r80, r128)     r80
-#define REAL_ULP(r32, r64, r80, r128) r80
+#define REAL(r32, r64, r80, r80m, r128)     REAL80(r80, r80m)
+#define REAL_ULP(r32, r64, r80, r80m, r128) REAL80(r80, r80m)
 #include TEST_VECTORS
 #undef REAL
 #undef REAL_ULP
@@ -152,8 +161,13 @@ test_binary80(void)
             printf("Skipping denorm value\n");
             continue;
         }
-        binary80 y = TEST_FUNC_80(test_80_vec[i].x);
-        ulp_t    ulp = ulp80(y, test_80_vec[i].y);
+#ifdef TEST_FUNC_REF
+        volatile binary80 y;
+        (void)TEST_FUNC_80((binary80 *)&y, test_80_vec[i].x);
+#else
+        volatile binary80 y = TEST_FUNC_80(test_80_vec[i].x);
+#endif
+        ulp_t ulp = ulp80(y, test_80_vec[i].y);
         if (ulp > max_ulp)
             max_ulp = ulp;
         if (ulp > math_ulp_binary80) {
@@ -173,10 +187,9 @@ test_binary80(void)
 #if defined(HAS_BINARY128) && !defined(SKIP_BINARY128)
 static TEST_CONST struct {
     binary128 x, y;
-    ulp_t     ulp;
 } test_128_vec[] = {
-#define REAL(r32, r64, r80, r128)     r128
-#define REAL_ULP(r32, r64, r80, r128) r128
+#define REAL(r32, r64, r80, r80m, r128)     r128
+#define REAL_ULP(r32, r64, r80, r80m, r128) r128
 #include TEST_VECTORS
 #undef REAL
 #undef REAL_ULP
@@ -196,8 +209,13 @@ test_binary128(void)
             printf("Skipping denorm value\n");
             continue;
         }
-        binary128 y = TEST_FUNC_128(test_128_vec[i].x);
-        ulp_t     ulp = ulp128(y, test_128_vec[i].y);
+#ifdef TEST_FUNC_REF
+        volatile binary128 y;
+        (void)TEST_FUNC_128((binary128 *)&y, test_128_vec[i].x);
+#else
+        volatile binary128 y = TEST_FUNC_128(test_128_vec[i].x);
+#endif
+        ulp_t ulp = ulp128(y, test_128_vec[i].y);
         if (ulp > max_ulp)
             max_ulp = ulp;
         if (ulp > math_ulp_binary128) {
@@ -217,7 +235,7 @@ test_binary128(void)
 int
 main(void)
 {
-    const char spaces[] = "               ";
+    const char spaces[] = "                         ";
 
     int        ret = 0;
     max_ulp = math_find_ulp_binary32();
@@ -238,7 +256,7 @@ main(void)
     ulp_t       max_ulp_128 = max_ulp;
 
     size_t      len = strlen(MATH_STRING(TEST_FUNC));
-    size_t      want_len = 10;
+    size_t      want_len = 20;
     size_t      extra = want_len - len;
     const char *space = spaces + strlen(spaces) - extra;
     assert(strlen(space) == extra);

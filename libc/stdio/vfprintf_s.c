@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-3-Clause
  *
- * Copyright © 2024, Synopsys Inc.
+ * Copyright © 2024-2026, MIPS Holding Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -34,10 +34,7 @@
  */
 
 #define __STDC_WANT_LIB_EXT1__ 1
-#include "stdio_private.h"
-#include <stdio.h>
-#include <stddef.h>
-#include <stdbool.h>
+#include "local-stdio.h"
 #include "../stdlib/local_s.h"
 
 #define VFPRINTF_S
